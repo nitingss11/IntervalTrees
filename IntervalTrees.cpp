@@ -12,10 +12,9 @@ Check for {14,16}, {21,23}.
 
 First the interval tree is formed using the given sample data and printed.
 Then {14,16}, {21,23} are inserted and the final tree is printed to test the insertion
+Then we search for {14,16} , {21,23} and also {41,45} (which is not present) to test the search function.
 Then {14,16}, {21,23} are deleted and the final tree is printed to test the deletion
-Then we search for {14,16} , {21,23} to test the search function.
 
-STILL NEED TO RESOLVE SOME ERRORS (in deletion)
 ************************************************************************************************************/
 
 #include <iostream>
@@ -30,19 +29,18 @@ enum node_color
 };
 
 
-typedef struct nodeT
+typedef struct node
 {
-    struct nodeT *left;
-    struct nodeT *right;
-    struct nodeT *p;
+    struct node *left;
+    struct node *right;
+    struct node *p;
     node_color color;
     int max;
     int low;
     int high;
-} node;
+};
 
-
-typedef node *nodeptr;
+typedef struct node *NODEPTR;
 node *nil = new node;
 
 int FindMax(int a ,int b, int c)
@@ -109,13 +107,10 @@ node* Tree_Search(node *x, int k)
 }
 
 
-node* Tree_Minimum(node *x)
-{
-    while (x->left != nil)
-    {
-        x = x->left;
-    }
-    return x;
+NODEPTR minimum(NODEPTR root) {
+	while (root->left != nil)
+		root = root->left;
+	return root;
 }
 
 void IT_Transplant(node* &root, node* &u, node* &v)
@@ -298,14 +293,14 @@ void IT_Insert(node* &root, node *z)
 }
 
 
-void IT_deletefixup(node** root, node *x) {
-	while (x != *root && x->color == BLACK) {
+void IT_deletefixup(NODEPTR *treeroot, NODEPTR x) {
+	while (x != *treeroot && x->color == BLACK) {
 		if (x == x->p->left) {
-			node* w = x->p->right;
+			NODEPTR w = x->p->right;
 			if (w->color == RED) {
 				w->color = BLACK;
 				x->p->color = RED;
-				Left_Rotate(*root,x->p);
+				Left_Rotate(*treeroot,x->p);
 				w = x->p->right;
 			}
 			if (w->left->color == BLACK && w->right->color == BLACK) {
@@ -316,22 +311,22 @@ void IT_deletefixup(node** root, node *x) {
 			 	if (w->right->color == BLACK) {
 					w->left->color = BLACK;
 					w->color = RED;
-					Right_Rotate(*root,w);
+					Right_Rotate(*treeroot,w);
 					w = x->p->right;
 				}
 				w->color = x->p->color;
 				x->p->color = BLACK;
 				w->right->color = BLACK;
-				Left_Rotate(*root,x->p);
-				x = *root;
+				Left_Rotate(*treeroot,x->p);
+				x = *treeroot;
 			}
 		}
 		else {
-			node * w = x->p->left;
+			NODEPTR w = x->p->left;
 			if (w->color == RED) {
 				w->color = BLACK;
 				x->p->color = RED;
-				Right_Rotate(*root,x->p);
+				Left_Rotate(*treeroot,x->p);
 				w = x->p->left;
 			}
 			if (w->left->color == BLACK && w->right->color == BLACK) {
@@ -342,19 +337,18 @@ void IT_deletefixup(node** root, node *x) {
 				if (w->left->color == BLACK) {
 					w->right->color = BLACK;
 					w->color = RED;
-					Left_Rotate(*root,w);
+					Left_Rotate(*treeroot,w);
 					w = x->p->left;
 				}
 				w->color = x->p->color;
 				x->p->color = BLACK;
 				w->left->color = BLACK;
-				Right_Rotate(*root,x->p);
-				x = *root;
+				Right_Rotate(*treeroot,x->p);
+				x = *treeroot;
 			}
 		}
 	}
 	x->color = BLACK;
-
 }
 
 
@@ -375,51 +369,46 @@ node* Interveral_Search(node *root, node *i)
     return x;
 }
 
-node* minimum(node* root) {
-	while (root->left != nil)
-		root = root->left;
-	return root;
-}
 
 
-void IT_Delete(node** root, node* z) {
-	node* l = Interveral_Search(*root, z);
-	if (l == nil) {
+
+void IT_delete(NODEPTR *treeroot, NODEPTR Z) {
+	//NODEPTR Z = search(*treeroot, z);
+	if (Z == nil) {
 		cout<<"Node to be deleted not found";
 		return;
 	}
-	node* y = l;
+	NODEPTR y = Z;
 	int yoc = y->color;
-	node* x;
-	if (l->left == nil) {
-		x = l->right;
-		IT_Transplant(*root,l,l->right);
+	NODEPTR x;
+	if (Z->left == nil) {
+		x = Z->right;
+		IT_Transplant(*treeroot,Z,Z->right);
 	}
-	else if (l->right == nil) {
-		x = l->left;
-		IT_Transplant(*root,l,l->left);
+	else if (Z->right == nil) {
+		x = Z->left;
+		IT_Transplant(*treeroot,Z,Z->left);
 	}
 	else {
-		y = minimum(l->right);
-		yoc = l->color;
+		y = minimum(Z->right);
+		yoc = y->color;
 		x = y->right;
-		if (y->p == l)
+		if (y->p == Z)
 			x->p = y;
 		else {
-			IT_Transplant(*root,y,y->right);
-			y->right = l->right;
+			IT_Transplant(*treeroot,y,y->right);
+			y->right = Z->right;
 			y->right->p = y;
 		}
-		IT_Transplant(*root,l,y);
-		y->left =l->left;
+		IT_Transplant(*treeroot,Z,y);
+		y->left = Z->left;
 		y->left->p = y;
-		y->color = l->color;
+		y->color = Z->color;
 	}
 	if (yoc == BLACK)
-		IT_deletefixup(root,x);
-   Max_Fixup(*root, x);
+		IT_deletefixup(treeroot,x);
+     //   Max_Fixup(*treeroot, Z);
 }
-
 
 void Create_IT_tree(node* &root)
 {
@@ -455,11 +444,10 @@ void Create_IT_tree(node* &root)
 
 //Main Program
 
-int main(int argc, char* argv[])
+int main()
 {
-    // Intinalize global varible
+
     nil->color = BLACK;
-    // Create the binary search tree
     node *root = nil;
     Create_IT_tree(root);
     LevelOrderTraversal(root);
@@ -532,14 +520,16 @@ int main(int argc, char* argv[])
     cout<<"search result for {41,45}"<<endl;
     cout<<"\n";
 
-   // node* nodeptr;
-    node** r = &root;
-    IT_Delete(r,n1); // {14,16} deleted
+    //NODEPTR tree1 = root;
+    IT_delete(&root,n1); // {14,16} deleted
     LevelOrderTraversal(root);
+    cout<<"\n";
     cout<<"{14,16} deleted"<<endl;
     cout<<"\n";
-    IT_Delete(r,n2); // {21,23} deleted
+
+    IT_delete(&root,n2); // {21,23} deleted
     LevelOrderTraversal(root);
+    cout<<"\n";
     cout<<"{21,23} deleted "<<endl;
     cout<<"\n";
     return 0;
